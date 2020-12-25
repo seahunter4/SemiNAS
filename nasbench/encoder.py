@@ -90,11 +90,15 @@ class Encoder(nn.Module):
             x = F.relu(x)
             if i != self.mlp_layers:
                 x = F.dropout(x, self.dropout, training=self.training)
+        print("x={}".format(x))
         x = (residual + x) * math.sqrt(0.5)
+        print("x={}".format(x))
         x = self.regressor(x)
+        print("x={}".format(x))
         predict_value = x
+        print("predict_val={}".format(predict_value))
         y = predict_value.data.squeeze()
-        print("predict_val={}".format(y))
+        print("y={}".format(y))
         y = torch.sum(y)
         y.backward()
         # g = tmp.grad
