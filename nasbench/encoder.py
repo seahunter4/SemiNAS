@@ -85,7 +85,8 @@ class Encoder(nn.Module):
         x = (residual + x) * math.sqrt(0.5)
         x = self.regressor(x)
         predict_value = x
-        y = predict_value.data.squeeze().tolist()
+        y = predict_value.data.squeeze()
+        print("predict_val={}".format(y))
         y.backward()
         # g = tmp.grad
         return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']
