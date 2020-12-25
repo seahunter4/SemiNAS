@@ -67,7 +67,9 @@ class Encoder(nn.Module):
         x = torch.mean(x, dim=1)
         x = F.normalize(x, 2, dim=-1)
         arch_emb = x
-        
+        tmp = x
+        tmp.requires_grad = True
+        x = tmp
         residual = x
         for i, mlp_layer in enumerate(self.mlp):
             x = mlp_layer(x)
@@ -77,7 +79,10 @@ class Encoder(nn.Module):
         x = (residual + x) * math.sqrt(0.5)
         x = self.regressor(x)
         predict_value = x
-        return encoder_outputs, encoder_hidden, arch_emb, predict_value
+        y = predict_value.data.squeeze().tolist()
+        y.backward()
+        g = tmp.grad
+        return encoder_outputs, encoder_hidden, arch_emb, predict_value, g
     
     def infer(self, x, predict_lambda, direction='-'):
         encoder_outputs, encoder_hidden, arch_emb, predict_value = self(x)

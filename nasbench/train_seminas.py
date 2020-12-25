@@ -133,13 +133,14 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
         nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, random_synthetic_label, False)
         nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True)
 
-        with torch.no_grad():
-            model.eval()
-            for sample in nao_synthetic_queue:
-                encoder_input = sample['encoder_input'].cuda()
-                # encoder_target = sample['encoder_target'].cuda()
-                _, _, _, predict_value = model.encoder(encoder_input)
-                random_synthetic_target += predict_value.data.squeeze().tolist()
+        # with torch.no_grad():
+        model.eval()
+        for sample in nao_synthetic_queue:
+            encoder_input = sample['encoder_input'].cuda()
+            # encoder_target = sample['encoder_target'].cuda()
+            _, _, _, predict_value, g = model.encoder(encoder_input)
+            random_synthetic_target += predict_value.data.squeeze().tolist()
+            print("grad:{}".format(g))
 
         assert len(random_synthetic_input) == len(random_synthetic_target)
 
@@ -237,7 +238,7 @@ def main():
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
         synthetic_encoder_input, synthetic_encoder_target, diffs = generate_synthetic_controller_data(nasbench, controller, train_encoder_input, args.m)
-        print('diffs array =\n{}'.format(diffs))
+        # print('diffs array =\n{}'.format(diffs))
         # if args.up_sample_ratio is None:
         #     up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)
         # else:
