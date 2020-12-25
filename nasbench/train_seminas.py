@@ -123,7 +123,7 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
                 ops=fs['module_operations'],
             )
             data = nasbench.query(arch)
-            random_synthetic_label.append(data['validation accuracy'])
+            random_synthetic_label.append(data['validation_accuracy'])
             seq = utils.convert_arch_to_seq(fs['module_adjacency'], fs['module_operations'])
             if seq not in random_synthetic_input and seq not in base_arch:
                 random_synthetic_input.append(seq)
