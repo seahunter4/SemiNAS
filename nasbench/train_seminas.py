@@ -123,10 +123,11 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
                 ops=fs['module_operations'],
             )
             data = nasbench.query(arch)
-            random_synthetic_label.append(data['validation_accuracy'])
+
             seq = utils.convert_arch_to_seq(fs['module_adjacency'], fs['module_operations'])
             if seq not in random_synthetic_input and seq not in base_arch:
                 random_synthetic_input.append(seq)
+                random_synthetic_label.append(data['validation_accuracy'])
             i += 1
 
         nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, random_synthetic_label, False)
@@ -209,22 +210,22 @@ def main():
         with open(os.path.join(args.output_dir, 'arch_pool.{}'.format(i)), 'w') as fa:
             for arch, seq, valid_acc in zip(arch_pool, seq_pool, arch_pool_valid_acc):
                 fa.write('{}\t{}\t{}\t{}\n'.format(arch.matrix, arch.ops, seq, valid_acc))
-        print('Top 10 architectures:')
-        for arch_index in range(10):
-            print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-            print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-            print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-
-        if i == args.iteration:
-            print('Final top 10 architectures:')
-            for arch_index in range(10):
-                print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-                print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-                print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-                fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
-                test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
-                print('Mean test accuracy:{}'.format(test_acc))
-            break
+        # print('Top 10 architectures:')
+        # for arch_index in range(10):
+        #     print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+        #     print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+        #     print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+        #
+        # if i == args.iteration:
+        #     print('Final top 10 architectures:')
+        #     for arch_index in range(10):
+        #         print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+        #         print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+        #         print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+        #         fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
+        #         test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
+        #         print('Mean test accuracy:{}'.format(test_acc))
+        #     break
 
         train_encoder_input = seq_pool
         train_encoder_target = [(i - mean_val) / std_val for i in arch_pool_valid_acc]
