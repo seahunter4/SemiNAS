@@ -48,7 +48,7 @@ parser.add_argument('--batch_size', type=int, default=100)
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--optimizer', type=str, default='adam')
 parser.add_argument('--grad_bound', type=float, default=5.0)
-parser.add_argument('--iteration', type=float, default=3)
+parser.add_argument('--iteration', type=float, default=1)
 args = parser.parse_args()
 
 log_format = '%(asctime)s %(message)s'
@@ -110,6 +110,7 @@ def train_controller(model, train_input, train_target, epochs):
 def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_arch=0):
     random_synthetic_input = []
     random_synthetic_target = []
+    random_synthetic_label = []
     if random_arch > 0:
         all_keys = list(nasbench.hash_iterator())
         np.random.shuffle(all_keys)
@@ -117,26 +118,37 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
         while len(random_synthetic_input) < random_arch:
             key = all_keys[i]
             fs, cs = nasbench.get_metrics_from_hash(key)
+            arch = api.ModelSpec(
+                matrix=fs['module_adjacency'],
+                ops=cs['module_operations'],
+            )
+            data = nasbench.query(arch)
+            random_synthetic_label.append(data['validation accuracy'])
             seq = utils.convert_arch_to_seq(fs['module_adjacency'], fs['module_operations'])
             if seq not in random_synthetic_input and seq not in base_arch:
                 random_synthetic_input.append(seq)
             i += 1
 
-        nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, None, False)
+        nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, random_synthetic_label, False)
         nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True)
 
         with torch.no_grad():
             model.eval()
             for sample in nao_synthetic_queue:
                 encoder_input = sample['encoder_input'].cuda()
+                # encoder_target = sample['encoder_target'].cuda()
                 _, _, _, predict_value = model.encoder(encoder_input)
                 random_synthetic_target += predict_value.data.squeeze().tolist()
+
         assert len(random_synthetic_input) == len(random_synthetic_target)
 
     synthetic_input = random_synthetic_input
     synthetic_target = random_synthetic_target
+    synthetic_label = random_synthetic_label
     assert len(synthetic_input) == len(synthetic_target)
-    return synthetic_input, synthetic_target
+    diffs = list((np.array(synthetic_label) - np.array(synthetic_target)) ** 2)
+
+    return synthetic_input, synthetic_target, diffs
 
 
 def main():
@@ -223,50 +235,51 @@ def main():
         logging.info('Finish pre-training EPD')
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
-        synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(nasbench, controller, train_encoder_input, args.m)
-        if args.up_sample_ratio is None:
-            up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)
-        else:
-            up_sample_ratio = args.up_sample_ratio
-        all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
-        all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
-        # Train
-        logging.info('Train EPD')
-        train_controller(controller, all_encoder_input, all_encoder_target, args.epochs)
-        logging.info('Finish training EPD')
+        synthetic_encoder_input, synthetic_encoder_target, diffs = generate_synthetic_controller_data(nasbench, controller, train_encoder_input, args.m)
+        print('diffs array =\n{}'.format(diffs))
+        # if args.up_sample_ratio is None:
+        #     up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)
+        # else:
+        #     up_sample_ratio = args.up_sample_ratio
+        # all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
+        # all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
+        # # Train
+        # logging.info('Train EPD')
+        # train_controller(controller, all_encoder_input, all_encoder_target, args.epochs)
+        # logging.info('Finish training EPD')
+        #
+        #
+        # new_archs = []
+        # new_seqs = []
+        # predict_step_size = 0
+        # unique_input = train_encoder_input + synthetic_encoder_input
+        # unique_target = train_encoder_target + synthetic_encoder_target
+        # unique_indices = np.argsort(unique_target)[::-1]
+        # unique_input = [unique_input[i] for i in unique_indices]
+        # topk_archs = unique_input[:args.k]
+        # controller_infer_dataset = utils.ControllerDataset(topk_archs, None, False)
+        # controller_infer_queue = torch.utils.data.DataLoader(controller_infer_dataset, batch_size=len(controller_infer_dataset), shuffle=False, pin_memory=True)
         
-    
-        new_archs = []
-        new_seqs = []
-        predict_step_size = 0
-        unique_input = train_encoder_input + synthetic_encoder_input
-        unique_target = train_encoder_target + synthetic_encoder_target
-        unique_indices = np.argsort(unique_target)[::-1]
-        unique_input = [unique_input[i] for i in unique_indices]
-        topk_archs = unique_input[:args.k]
-        controller_infer_dataset = utils.ControllerDataset(topk_archs, None, False)
-        controller_infer_queue = torch.utils.data.DataLoader(controller_infer_dataset, batch_size=len(controller_infer_dataset), shuffle=False, pin_memory=True)
-        
-        while len(new_archs) < args.new_arch:
-            predict_step_size += 1
-            logging.info('Generate new architectures with step size {}'.format(predict_step_size))
-            new_seq, new_perfs = controller_infer(controller_infer_queue, controller, predict_step_size, direction='+')
-            for seq in new_seq:
-                matrix, ops = utils.convert_seq_to_arch(seq)
-                arch = api.ModelSpec(matrix=matrix, ops=ops)
-                if nasbench.is_valid(arch) and seq not in train_encoder_input and seq not in new_seqs:
-                    new_archs.append(arch)
-                    new_seqs.append(seq)
-                if len(new_seqs) >= args.new_arch:
-                    break
-            logging.info('%d new archs generated now', len(new_archs))
-            if predict_step_size > args.max_step_size:
-                break
-
-        child_arch_pool = new_archs
-        child_seq_pool = new_seqs
-        child_arch_pool_valid_acc = []
-        logging.info("Generate %d new archs", len(child_arch_pool))
+        # while len(new_archs) < args.new_arch:
+        #     predict_step_size += 1
+        #     logging.info('Generate new architectures with step size {}'.format(predict_step_size))
+        #     new_seq, new_perfs = controller_infer(controller_infer_queue, controller, predict_step_size, direction='+')
+        #     for seq in new_seq:
+        #         matrix, ops = utils.convert_seq_to_arch(seq)
+        #         arch = api.ModelSpec(matrix=matrix, ops=ops)
+        #         if nasbench.is_valid(arch) and seq not in train_encoder_input and seq not in new_seqs:
+        #             new_archs.append(arch)
+        #             new_seqs.append(seq)
+        #         if len(new_seqs) >= args.new_arch:
+        #             break
+        #     logging.info('%d new archs generated now', len(new_archs))
+        #     if predict_step_size > args.max_step_size:
+        #         break
+        #
+        # child_arch_pool = new_archs
+        # child_seq_pool = new_seqs
+        # child_arch_pool_valid_acc = []
+        # logging.info("Generate %d new archs", len(child_arch_pool))
 
 if __name__ == '__main__':
     main()
