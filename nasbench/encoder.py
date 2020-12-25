@@ -59,9 +59,9 @@ class Encoder(nn.Module):
         return predict_value
 
     def forward(self, x):
-        x.requires_grad = True
-        x = x.long()
+        print("x={}".format(x))
         x = self.embedding(x)
+        print("embed={}".format(x))
         x = F.dropout(x, self.dropout, training=self.training)
         residual = x
         x, hidden = self.rnn(x)
@@ -89,6 +89,7 @@ class Encoder(nn.Module):
         predict_value = x
         y = predict_value.data.squeeze()
         print("predict_val={}".format(y))
+        y = torch.sum(y)
         y.backward()
         # g = tmp.grad
         return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']

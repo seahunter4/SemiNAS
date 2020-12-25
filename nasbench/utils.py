@@ -88,13 +88,13 @@ class ControllerDataset(torch.utils.data.Dataset):
             decoder_input = [self.sos_id] + encoder_input[:-1]
             sample = {
                 'encoder_input': torch.FloatTensor(encoder_input),
-                'encoder_target': torch.FloatTensor(encoder_target),
+                'encoder_target': torch.LongTensor(encoder_target),
                 'decoder_input': torch.LongTensor(decoder_input),
                 'decoder_target': torch.LongTensor(encoder_input),
             }
         else:
             sample = {
-                'encoder_input': torch.FloatTensor(encoder_input),
+                'encoder_input': torch.LongTensor(encoder_input),
                 'decoder_target': torch.LongTensor(encoder_input),
             }
             if encoder_target is not None:
