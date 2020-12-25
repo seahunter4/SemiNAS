@@ -59,6 +59,7 @@ class Encoder(nn.Module):
         return predict_value
 
     def forward(self, x):
+        x.requires_grad = True
         x = self.embedding(x)
         x = F.dropout(x, self.dropout, training=self.training)
         residual = x
