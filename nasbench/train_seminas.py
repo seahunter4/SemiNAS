@@ -120,7 +120,7 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
             fs, cs = nasbench.get_metrics_from_hash(key)
             arch = api.ModelSpec(
                 matrix=fs['module_adjacency'],
-                ops=cs['module_operations'],
+                ops=fs['module_operations'],
             )
             data = nasbench.query(arch)
             random_synthetic_label.append(data['validation accuracy'])
@@ -231,7 +231,7 @@ def main():
 
         # Pre-train
         logging.info('Pre-train EPD')
-        train_controller(controller, train_encoder_input, train_encoder_target, args.pretrain_epochs)
+        # train_controller(controller, train_encoder_input, train_encoder_target, args.pretrain_epochs)
         logging.info('Finish pre-training EPD')
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
