@@ -60,6 +60,7 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         x.requires_grad = True
+        x = torch.LongTensor(x.numpy())
         x = self.embedding(x)
         x = F.dropout(x, self.dropout, training=self.training)
         residual = x
