@@ -8,6 +8,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+grads = {}
+def save_grad(name):
+    def hook(grad):
+        grad[name] = grad
+    return hook
 
 class Encoder(nn.Module):
     def __init__(self,
@@ -67,9 +72,10 @@ class Encoder(nn.Module):
         x = torch.mean(x, dim=1)
         x = F.normalize(x, 2, dim=-1)
         arch_emb = x
-        tmp = x
-        tmp.requires_grad = True
-        x = tmp
+        # tmp = x
+        # tmp.requires_grad = True
+        # x = tmp
+        x.register_hook(save_grad('x'))
         residual = x
         for i, mlp_layer in enumerate(self.mlp):
             x = mlp_layer(x)
@@ -81,8 +87,8 @@ class Encoder(nn.Module):
         predict_value = x
         y = predict_value.data.squeeze().tolist()
         y.backward()
-        g = tmp.grad
-        return encoder_outputs, encoder_hidden, arch_emb, predict_value, g
+        # g = tmp.grad
+        return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']
     
     def infer(self, x, predict_lambda, direction='-'):
         encoder_outputs, encoder_hidden, arch_emb, predict_value = self(x)
