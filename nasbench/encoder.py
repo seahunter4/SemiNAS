@@ -11,7 +11,7 @@ import torch.nn.functional as F
 grads = {}
 def save_grad(name):
     def hook(grad):
-        grad[name] = grad
+        grads[name] = grad
     return hook
 
 class Encoder(nn.Module):
