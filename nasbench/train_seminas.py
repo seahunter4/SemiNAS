@@ -139,12 +139,12 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
         for sample in nao_synthetic_queue:
             encoder_input = sample['encoder_input'].cuda()
             # encoder_target = sample['encoder_target'].cuda()
-            _, _, _, predict_value, grads_tensor = model.encoder(encoder_input)
+            _, _, _, predict_value, grads_tensor = model.encoder.compute_grad(encoder_input)
             predict_value = predict_value.data.squeeze()
-            predict_value.backward()
+            # predict_value.backward()
             random_synthetic_target += predict_value.tolist()
-            for g in grads_tensor:
-                grads.append(torch.norm(g).tolist())
+            # for g in grads_tensor:
+            grads.append(torch.norm(grads_tensor.squeeze()).tolist())
 
         print("grads:{} with length {}".format(grads,len(grads)))
         assert len(random_synthetic_input) == len(random_synthetic_target)

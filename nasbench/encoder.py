@@ -82,7 +82,7 @@ class Encoder(nn.Module):
         # tmp = x
         # tmp.requires_grad = True
         # x = tmp
-        x.register_hook(save_grad('x'))
+        # x.register_hook(save_grad('x'))
         # print("x={}".format(x))
         residual = x
         for i, mlp_layer in enumerate(self.mlp):
@@ -102,7 +102,7 @@ class Encoder(nn.Module):
         # y = torch.sum(predict_value)
         # y.backward(retain_graph=True)
         # g = tmp.grad
-        return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']
+        return encoder_outputs, encoder_hidden, arch_emb, predict_value, None
     
     def infer(self, x, predict_lambda, direction='-'):
         encoder_outputs, encoder_hidden, arch_emb, predict_value, _ = self(x)
@@ -145,4 +145,4 @@ class Encoder(nn.Module):
         predict_value = x
         y = torch.sum(predict_value)
         y.backward()
-        return encoder_outputs, encoder_hidden, arch_emb, predict_value
+        return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']
