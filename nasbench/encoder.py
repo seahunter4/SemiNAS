@@ -100,7 +100,7 @@ class Encoder(nn.Module):
         # y = predict_value.data.squeeze()
         # print("y={}".format(y))
         y = torch.sum(predict_value)
-        y.backward()
+        y.backward(retain_graph=True)
         # g = tmp.grad
         return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']
     
