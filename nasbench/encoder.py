@@ -99,8 +99,8 @@ class Encoder(nn.Module):
         # print("predict_val={}".format(predict_value))
         # y = predict_value.data.squeeze()
         # print("y={}".format(y))
-        y = torch.sum(predict_value)
-        y.backward(retain_graph=True)
+        # y = torch.sum(predict_value)
+        # y.backward(retain_graph=True)
         # g = tmp.grad
         return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']
     
@@ -118,3 +118,31 @@ class Encoder(nn.Module):
         new_arch_emb = F.normalize(new_arch_emb, 2, dim=-1)
         new_predict_value = self.forward_predictor(new_arch_emb)
         return encoder_outputs, encoder_hidden, arch_emb, predict_value, new_encoder_outputs, new_arch_emb, new_predict_value
+
+    def compute_grad(self, x):
+        x = self.embedding(x)
+        x = F.dropout(x, self.dropout, training=self.training)
+        residual = x
+        x, hidden = self.rnn(x)
+        x = self.out_proj(x)
+        x = residual + x
+        x = F.normalize(x, 2, dim=-1)
+        encoder_outputs = x
+        encoder_hidden = hidden
+
+        x = torch.mean(x, dim=1)
+        x = F.normalize(x, 2, dim=-1)
+        arch_emb = x
+        x.register_hook(save_grad('x'))
+        residual = x
+        for i, mlp_layer in enumerate(self.mlp):
+            x = mlp_layer(x)
+            x = F.relu(x)
+            if i != self.mlp_layers:
+                x = F.dropout(x, self.dropout, training=self.training)
+        x = (residual + x) * math.sqrt(0.5)
+        x = self.regressor(x)
+        predict_value = x
+        y = torch.sum(predict_value)
+        y.backward()
+        return encoder_outputs, encoder_hidden, arch_emb, predict_value

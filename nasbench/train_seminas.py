@@ -131,7 +131,7 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
             i += 1
 
         nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, random_synthetic_label, False)
-        nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True)
+        nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=1, shuffle=False, pin_memory=True)
         grads = []
         # with torch.no_grad():
         # model.eval()
@@ -140,7 +140,9 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
             encoder_input = sample['encoder_input'].cuda()
             # encoder_target = sample['encoder_target'].cuda()
             _, _, _, predict_value, grads_tensor = model.encoder(encoder_input)
-            random_synthetic_target += predict_value.data.squeeze().tolist()
+            predict_value = predict_value.data.squeeze()
+            predict_value.backward()
+            random_synthetic_target += predict_value.tolist()
             for g in grads_tensor:
                 grads.append(torch.norm(g).tolist())
 
