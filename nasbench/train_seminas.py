@@ -132,17 +132,19 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
 
         nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, random_synthetic_label, False)
         nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True)
-
+        grads = []
         # with torch.no_grad():
         # model.eval()
         model.train()
         for sample in nao_synthetic_queue:
             encoder_input = sample['encoder_input'].cuda()
             # encoder_target = sample['encoder_target'].cuda()
-            _, _, _, predict_value, g = model.encoder(encoder_input)
+            _, _, _, predict_value, grads_tensor = model.encoder(encoder_input)
             random_synthetic_target += predict_value.data.squeeze().tolist()
-            print("grad:{}".format(g))
+            for g in grads_tensor:
+                grads.append(torch.norm(g))
 
+        print("grads:{} with length {}".format(grads,len(grads)))
         assert len(random_synthetic_input) == len(random_synthetic_target)
 
     synthetic_input = random_synthetic_input
@@ -151,7 +153,7 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
     assert len(synthetic_input) == len(synthetic_target)
     diffs = list((np.array(synthetic_label) - np.array(synthetic_target)) ** 2)
 
-    return synthetic_input, synthetic_target, diffs
+    return synthetic_input, synthetic_target, diffs, grads
 
 
 def main():
@@ -238,7 +240,8 @@ def main():
         logging.info('Finish pre-training EPD')
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
-        synthetic_encoder_input, synthetic_encoder_target, diffs = generate_synthetic_controller_data(nasbench, controller, train_encoder_input, args.m)
+        synthetic_encoder_input, synthetic_encoder_target, diffs, grads = generate_synthetic_controller_data(nasbench, controller, train_encoder_input, args.m)
+
         # print('diffs array =\n{}'.format(diffs))
         # if args.up_sample_ratio is None:
         #     up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)

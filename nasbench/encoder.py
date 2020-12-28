@@ -59,44 +59,44 @@ class Encoder(nn.Module):
         return predict_value
 
     def forward(self, x):
-        print("x={}".format(x))
+        # print("x={}".format(x))
         x = self.embedding(x)
-        print("embed={}".format(x))
+        # print("embed={}".format(x))
         x = F.dropout(x, self.dropout, training=self.training)
         residual = x
-        print("x={}".format(x))
+        # print("x={}".format(x))
         x, hidden = self.rnn(x)
-        print("x={}".format(x))
+        # print("x={}".format(x))
         x = self.out_proj(x)
-        print("x={}".format(x))
+        # print("x={}".format(x))
         x = residual + x
-        print("x={}".format(x))
+        # print("x={}".format(x))
         x = F.normalize(x, 2, dim=-1)
         encoder_outputs = x
         encoder_hidden = hidden
         
         x = torch.mean(x, dim=1)
         x = F.normalize(x, 2, dim=-1)
-        print("x={}".format(x))
+        # print("x={}".format(x))
         arch_emb = x
         # tmp = x
         # tmp.requires_grad = True
         # x = tmp
         x.register_hook(save_grad('x'))
-        print("x={}".format(x))
+        # print("x={}".format(x))
         residual = x
         for i, mlp_layer in enumerate(self.mlp):
             x = mlp_layer(x)
             x = F.relu(x)
             if i != self.mlp_layers:
                 x = F.dropout(x, self.dropout, training=self.training)
-        print("x={}".format(x))
+        # print("x={}".format(x))
         x = (residual + x) * math.sqrt(0.5)
-        print("x={}".format(x))
+        # print("x={}".format(x))
         x = self.regressor(x)
-        print("x={}".format(x))
+        # print("x={}".format(x))
         predict_value = x
-        print("predict_val={}".format(predict_value))
+        # print("predict_val={}".format(predict_value))
         # y = predict_value.data.squeeze()
         # print("y={}".format(y))
         y = torch.sum(predict_value)
