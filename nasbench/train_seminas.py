@@ -241,7 +241,12 @@ def main():
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
         synthetic_encoder_input, synthetic_encoder_target, diffs, grads = generate_synthetic_controller_data(nasbench, controller, train_encoder_input, args.m)
-
+        with open("grads_data.txt", "w") as f:
+            for d in diffs:
+                f.write("{} ".format(d))
+            f.write('\n')
+            for g in grads:
+                f.write("{} ".format(g))
         # print('diffs array =\n{}'.format(diffs))
         # if args.up_sample_ratio is None:
         #     up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)

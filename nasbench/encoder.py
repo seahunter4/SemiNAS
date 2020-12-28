@@ -105,7 +105,7 @@ class Encoder(nn.Module):
         return encoder_outputs, encoder_hidden, arch_emb, predict_value, grads['x']
     
     def infer(self, x, predict_lambda, direction='-'):
-        encoder_outputs, encoder_hidden, arch_emb, predict_value = self(x)
+        encoder_outputs, encoder_hidden, arch_emb, predict_value, _ = self(x)
         grads_on_outputs = torch.autograd.grad(predict_value, encoder_outputs, torch.ones_like(predict_value))[0]
         if direction == '+':
             new_encoder_outputs = encoder_outputs + predict_lambda * grads_on_outputs

@@ -52,7 +52,7 @@ class NAO(nn.Module):
         self.decoder.rnn.flatten_parameters()
     
     def forward(self, input_variable, target_variable=None):
-        encoder_outputs, encoder_hidden, arch_emb, predict_value = self.encoder(input_variable)
+        encoder_outputs, encoder_hidden, arch_emb, predict_value, _ = self.encoder(input_variable)
         decoder_hidden = (arch_emb.unsqueeze(0), arch_emb.unsqueeze(0))
         decoder_outputs, archs = self.decoder(target_variable, decoder_hidden, encoder_outputs)
         return predict_value, decoder_outputs, archs
