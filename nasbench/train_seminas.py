@@ -134,7 +134,8 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
         nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True)
 
         # with torch.no_grad():
-        model.eval()
+        # model.eval()
+        model.train()
         for sample in nao_synthetic_queue:
             encoder_input = sample['encoder_input'].cuda()
             # encoder_target = sample['encoder_target'].cuda()
