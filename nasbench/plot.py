@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 with open("grads_data.txt", "r") as f:
@@ -11,7 +13,7 @@ grads = [float(i) for i in grads]
 fig = plt.figure()
 plt.xlabel('grads')
 plt.ylabel('diffs')
-plt.plot(grads,diffs)
+plt.scatter(grads,diffs)
 plt.savefig("./grads_diffs.png")
-plt.show()
+# plt.show()
 

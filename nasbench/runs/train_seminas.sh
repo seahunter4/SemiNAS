@@ -7,4 +7,4 @@ mkdir -p $OUTPUT_DIR
 
 python train_seminas.py \
   --output_dir=$OUTPUT_DIR \
-  | tee $OUTPUT_DIR/log.txt
+  | tee $OUTPUT_DIR/log1229_1.txt
