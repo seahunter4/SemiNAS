@@ -131,33 +131,36 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
             i += 1
 
         nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, random_synthetic_label, False)
-        nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=1, shuffle=False, pin_memory=True)
+        nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True)
         grads = []
         # with torch.no_grad():
-        # model.eval()
-        with torch.backends.cudnn.flags(enabled=False):
-            for sample in nao_synthetic_queue:
-                encoder_input = sample['encoder_input']
-                # encoder_target = sample['encoder_target'].cuda()
-                _, _, _, predict_value, grads_tensor = model.encoder.compute_grad(encoder_input)
-                predict_value = predict_value.data.squeeze()
-                # predict_value.backward()
-                random_synthetic_target.append(predict_value.tolist())
-                # for g in grads_tensor:
-                grads.append(torch.norm(grads_tensor.squeeze()).tolist())
-
+        model.eval()
         # model.train()
-        # for sample in nao_synthetic_queue:
-        #     encoder_input = sample['encoder_input'].cuda()
-        #     # encoder_target = sample['encoder_target'].cuda()
-        #     _, _, _, predict_value, grads_tensor = model.encoder.compute_grad(encoder_input)
-        #     predict_value = predict_value.data.squeeze()
-        #     # predict_value.backward()
-        #     random_synthetic_target.append(predict_value.tolist())
-        #     # for g in grads_tensor:
-        #     grads.append(torch.norm(grads_tensor.squeeze()).tolist())
 
-        print("grads:{} with length {}".format(grads,len(grads)))
+        # with torch.backends.cudnn.flags(enabled=False):
+        #     for sample in nao_synthetic_queue:
+        #         encoder_input = sample['encoder_input']
+        #         # encoder_target = sample['encoder_target'].cuda()
+        #         _, _, _, predict_value, grads_tensor = model.encoder.compute_grad(encoder_input)
+        #         predict_value = predict_value.data.squeeze()
+        #         # predict_value.backward()
+        #         random_synthetic_target.append(predict_value.tolist())
+        #         # for g in grads_tensor:
+        #         grads.append(torch.norm(grads_tensor.squeeze()).tolist())
+
+
+        for sample in nao_synthetic_queue:
+            encoder_input = sample['encoder_input'].cuda()
+            # encoder_target = sample['encoder_target'].cuda()
+            encoder_outputs, _, _, predict_value, _ = model.encoder(encoder_input)
+            gradients = torch.autograd.grad(predict_value, encoder_outputs, torch.ones_like(predict_value))
+            predict_value = predict_value.data.squeeze()
+            # predict_value.backward()
+            random_synthetic_target += predict_value.tolist()
+            # for g in grads_tensor:
+            grads += (torch.norm(g).tolist() for g in gradients)
+
+        print("grads:{} with length {}".format(grads, len(grads)))
         assert len(random_synthetic_input) == len(random_synthetic_target)
 
     synthetic_input = random_synthetic_input
@@ -260,6 +263,9 @@ def main():
             f.write('\n')
             for g in grads:
                 f.write("{} ".format(g))
+            f.write('\n')
+            for t in synthetic_encoder_target:
+                f.write("{} ".format(t))
         # print('diffs array =\n{}'.format(diffs))
         # if args.up_sample_ratio is None:
         #     up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)
