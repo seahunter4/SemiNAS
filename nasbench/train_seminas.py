@@ -24,7 +24,7 @@ parser.add_argument('--data', type=str, default='data')
 parser.add_argument('--output_dir', type=str, default='models')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--n', type=int, default=1100)
-parser.add_argument('--m', type=int, default=10000)
+parser.add_argument('--m', type=int, default=100000)
 parser.add_argument('--nodes', type=int, default=7)
 parser.add_argument('--new_arch', type=int, default=300)
 parser.add_argument('--k', type=int, default=100)
@@ -259,7 +259,12 @@ def main():
         logging.info('Finish pre-training EPD')
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
-        synthetic_encoder_input, synthetic_encoder_target, diffs, grads = generate_synthetic_controller_data(nasbench, controller, train_encoder_input, args.m)
+        synthetic_encoder_input, \
+        synthetic_encoder_target, \
+        diffs, grads = generate_synthetic_controller_data(nasbench,
+                                                          controller,
+                                                          train_encoder_input,
+                                                          args.m)
         with open("grads_data.txt", "w") as f:
             for d in diffs:
                 f.write("{} ".format(d))
