@@ -158,16 +158,18 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
             # predict_value.backward()
             random_synthetic_target += predict_value.tolist()
             # for g in grads_tensor:
-            grads += (torch.norm(g).tolist() for g in gradients)
+            grads += [torch.norm(g).tolist() for g in gradients]
 
         print("grads:{} with length {}".format(grads, len(grads)))
         assert len(random_synthetic_input) == len(random_synthetic_target)
+
 
     synthetic_input = random_synthetic_input
     synthetic_target = random_synthetic_target
     synthetic_label = random_synthetic_label
     assert len(synthetic_input) == len(synthetic_target)
     diffs = list((np.array(synthetic_label) - np.array(synthetic_target)) ** 2)
+    assert len(diffs) == len(grads)
 
     return synthetic_input, synthetic_target, diffs, grads
 
