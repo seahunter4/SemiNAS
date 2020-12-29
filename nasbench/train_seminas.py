@@ -153,7 +153,8 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
             encoder_input = sample['encoder_input'].cuda()
             # encoder_target = sample['encoder_target'].cuda()
             encoder_outputs, _, _, predict_value, _ = model.encoder(encoder_input)
-            gradients = torch.autograd.grad(predict_value, encoder_outputs, torch.ones_like(predict_value))
+            gradients = torch.autograd.grad(predict_value, encoder_outputs, torch.ones_like(predict_value))[0]
+            print("gradients={}".format(gradients))
             predict_value = predict_value.data.squeeze()
             # predict_value.backward()
             random_synthetic_target += predict_value.tolist()
