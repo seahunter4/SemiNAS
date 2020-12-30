@@ -1,24 +1,24 @@
+import math
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 with open("grads_data.txt", "r") as f:
-    diff_str = f.readline().rstrip()
     grad_str = f.readline().rstrip()
     label_str = f.readline().rstrip()
-    diffs = diff_str.split(' ')
-    grads = grad_str.split(' ')
-    labels = label_str.split(' ')
-diffs = [float(i) for i in diffs]
+    pred_str = f.readline().rstrip()
+grads = grad_str.split(' ')
+labels = label_str.split(' ')
+preds = pred_str.split(' ')
 grads = [float(i) for i in grads]
 labels = [float(i) for i in labels]
-
-rel_diffs = [diffs[i]/labels[i] for i in range(len(diffs))]
+preds = [float(i) for i in preds]
+rel_diffs = [abs((labels[i] - preds[i]))/preds[i] for i in range(len(preds))]
 
 fig = plt.figure()
 plt.xlabel('grads')
-plt.ylabel('predict_vals')
-plt.scatter(grads, labels)
-plt.savefig("./grad_pred.png")
+plt.ylabel('relative_diffs')
+plt.scatter(grads, rel_diffs)
+plt.savefig("./rel_diffs.png")
 # plt.show()
 

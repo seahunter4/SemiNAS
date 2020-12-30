@@ -169,10 +169,9 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
     synthetic_target = random_synthetic_target
     synthetic_label = random_synthetic_label
     assert len(synthetic_input) == len(synthetic_target)
-    diffs = list((np.array(synthetic_label) - np.array(synthetic_target)) ** 2)
-    assert len(diffs) == len(grads)
 
-    return synthetic_input, synthetic_target, diffs, grads
+
+    return synthetic_input, synthetic_target, synthetic_label, grads
 
 
 def main():
@@ -261,16 +260,17 @@ def main():
         logging.info('Generate synthetic data for EPD')
         synthetic_encoder_input, \
         synthetic_encoder_target, \
-        diffs, grads = generate_synthetic_controller_data(nasbench,
-                                                          controller,
-                                                          train_encoder_input,
-                                                          args.m)
+        synthetic_encoder_labels, \
+        grads = generate_synthetic_controller_data(nasbench,
+                                                   controller,
+                                                   train_encoder_input,
+                                                   args.m)
         with open("grads_data.txt", "w") as f:
-            for d in diffs:
-                f.write("{} ".format(d))
-            f.write('\n')
             for g in grads:
                 f.write("{} ".format(g))
+            f.write('\n')
+            for l in synthetic_encoder_labels:
+                f.write("{} ".format(l))
             f.write('\n')
             for t in synthetic_encoder_target:
                 f.write("{} ".format(t))
