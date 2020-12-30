@@ -13,13 +13,13 @@ preds = pred_str.split(' ')
 grads = [float(i) for i in grads]
 labels = [float(i) for i in labels]
 preds = [float(i) for i in preds]
-rel_diffs = [abs((labels[i] - preds[i])/preds[i]) for i in range(len(preds))]
+rel_diffs = [abs((labels[i] - preds[i])/labels[i]) for i in range(len(preds))]
 
 fig = plt.figure()
 plt.xlabel('grads')
 plt.ylabel('relative_diffs')
 plt.ylim(-100,100)
 plt.scatter(grads, rel_diffs)
-plt.savefig("./rel_diffs.png")
+plt.savefig("./lab_rel_diffs.png")
 # plt.show()
 
