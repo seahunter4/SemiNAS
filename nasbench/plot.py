@@ -37,7 +37,7 @@ if __name__ == "__main__":
     draw_scatter(grads,
                  rel_diffs_pred,
                  None,
-                 (-100,100),
+                 (0,200),
                  'grads',
                  'relative_diffs2pred',
                  fig_path+"grads_rel_diffs2pred.png")
