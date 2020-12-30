@@ -18,6 +18,7 @@ rel_diffs = [abs((labels[i] - preds[i]))/preds[i] for i in range(len(preds))]
 fig = plt.figure()
 plt.xlabel('grads')
 plt.ylabel('relative_diffs')
+plt.ylim(-100,100)
 plt.scatter(grads, rel_diffs)
 plt.savefig("./rel_diffs.png")
 # plt.show()
