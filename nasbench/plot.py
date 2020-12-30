@@ -13,7 +13,7 @@ preds = pred_str.split(' ')
 grads = [float(i) for i in grads]
 labels = [float(i) for i in labels]
 preds = [float(i) for i in preds]
-rel_diffs = [abs((labels[i] - preds[i]))/preds[i] for i in range(len(preds))]
+rel_diffs = [abs((labels[i] - preds[i])/preds[i]) for i in range(len(preds))]
 
 fig = plt.figure()
 plt.xlabel('grads')
