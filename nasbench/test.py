@@ -11,5 +11,7 @@ for key in all_keys:
         ops=fixed_stat['module_operations'],
     )
     data = nasbench.query(arch)
+    if data['validation_accuracy'] < 0.9:
+        continue
     valid_accs.append(data['validation_accuracy'])
-print("mean={}, std={}".format(np.mean(valid_accs), np.std(valid_accs)))
+print("mean={}, std={}, std(n-1)={}".format(np.mean(valid_accs), np.std(valid_accs), np.std(valid_accs, ddof=1)))
