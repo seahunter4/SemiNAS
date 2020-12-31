@@ -1,6 +1,7 @@
 from nasbench import api
 import numpy as np
 
+nasbench = api.NASBench('./data/nasbench_full.tfrecord')
 all_keys = list(nasbench.hash_iterator())
 valid_accs = []
 for key in all_keys:
