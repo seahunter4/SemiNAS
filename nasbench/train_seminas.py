@@ -266,7 +266,9 @@ def main():
                                                    controller,
                                                    train_encoder_input,
                                                    args.m)
+        print("original_labels = {}".format(synthetic_encoder_labels))
         synthetic_encoder_labels = [(i - mean_val) / std_val for i in synthetic_encoder_labels]
+        print("centralized_labels = {}".format(synthetic_encoder_labels))
         with open("grads_data.txt", "w") as f:
             for g in grads:
                 f.write("{} ".format(g))
