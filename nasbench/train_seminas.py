@@ -48,7 +48,7 @@ parser.add_argument('--batch_size', type=int, default=100)
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--optimizer', type=str, default='adam')
 parser.add_argument('--grad_bound', type=float, default=5.0)
-parser.add_argument('--iteration', type=float, default=0)
+parser.add_argument('--iteration', type=float, default=3)
 args = parser.parse_args()
 
 log_format = '%(asctime)s %(message)s'
@@ -132,7 +132,7 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
 
         nao_synthetic_dataset = utils.ControllerDataset(random_synthetic_input, random_synthetic_label, False)
         nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True)
-        grads = []
+        grads = list()
         # with torch.no_grad():
         model.eval()
         # model.train()
@@ -164,11 +164,14 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
         print("grads:{} with length {}".format(grads, len(grads)))
         assert len(random_synthetic_input) == len(random_synthetic_target)
 
-
     synthetic_input = random_synthetic_input
     synthetic_target = random_synthetic_target
     synthetic_label = random_synthetic_label
     assert len(synthetic_input) == len(synthetic_target)
+
+    synthetic_indices = np.argsort(grads)[::-1]
+    synthetic_input = [synthetic_input[synthetic_indices[i]] for i in range(10000)]
+    synthetic_target = [synthetic_target[synthetic_indices[i]] for i in range(10000)]
 
 
     return synthetic_input, synthetic_target, synthetic_label, grads
@@ -232,22 +235,22 @@ def main():
         with open(os.path.join(args.output_dir, 'arch_pool.{}'.format(i)), 'w') as fa:
             for arch, seq, valid_acc in zip(arch_pool, seq_pool, arch_pool_valid_acc):
                 fa.write('{}\t{}\t{}\t{}\n'.format(arch.matrix, arch.ops, seq, valid_acc))
-        # print('Top 10 architectures:')
-        # for arch_index in range(10):
-        #     print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-        #     print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-        #     print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-        #
-        # if i == args.iteration:
-        #     print('Final top 10 architectures:')
-        #     for arch_index in range(10):
-        #         print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-        #         print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-        #         print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-        #         fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
-        #         test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
-        #         print('Mean test accuracy:{}'.format(test_acc))
-        #     break
+        print('Top 10 architectures:')
+        for arch_index in range(10):
+            print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+            print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+            print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+
+        if i == args.iteration:
+            print('Final top 10 architectures:')
+            for arch_index in range(10):
+                print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+                print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+                print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+                fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
+                test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
+                print('Mean test accuracy:{}'.format(test_acc))
+            break
 
         # z-score
         train_encoder_input = seq_pool
@@ -266,62 +269,62 @@ def main():
                                                    controller,
                                                    train_encoder_input,
                                                    args.m)
-        print("original_labels = {}".format(synthetic_encoder_labels))
-        synthetic_encoder_labels = [(i - mean_val) / std_val for i in synthetic_encoder_labels]
-        print("centralized_labels = {}".format(synthetic_encoder_labels))
-        with open("grads_data.txt", "w") as f:
-            for g in grads:
-                f.write("{} ".format(g))
-            f.write('\n')
-            for l in synthetic_encoder_labels:
-                f.write("{} ".format(l))
-            f.write('\n')
-            for t in synthetic_encoder_target:
-                f.write("{} ".format(t))
+        # print("original_labels = {}".format(synthetic_encoder_labels))
+        # synthetic_encoder_labels = [(i - mean_val) / std_val for i in synthetic_encoder_labels]
+        # print("centralized_labels = {}".format(synthetic_encoder_labels))
+        # with open("grads_data.txt", "w") as f:
+        #     for g in grads:
+        #         f.write("{} ".format(g))
+        #     f.write('\n')
+        #     for l in synthetic_encoder_labels:
+        #         f.write("{} ".format(l))
+        #     f.write('\n')
+        #     for t in synthetic_encoder_target:
+        #         f.write("{} ".format(t))
         # print('diffs array =\n{}'.format(diffs))
-        # if args.up_sample_ratio is None:
-        #     up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)
-        # else:
-        #     up_sample_ratio = args.up_sample_ratio
-        # all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
-        # all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
-        # # Train
-        # logging.info('Train EPD')
-        # train_controller(controller, all_encoder_input, all_encoder_target, args.epochs)
-        # logging.info('Finish training EPD')
+        if args.up_sample_ratio is None:
+            up_sample_ratio = np.ceil(args.m / len(train_encoder_input)).astype(np.int)
+        else:
+            up_sample_ratio = args.up_sample_ratio
+        all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
+        all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
+        # Train
+        logging.info('Train EPD')
+        train_controller(controller, all_encoder_input, all_encoder_target, args.epochs)
+        logging.info('Finish training EPD')
         #
         #
-        # new_archs = []
-        # new_seqs = []
-        # predict_step_size = 0
-        # unique_input = train_encoder_input + synthetic_encoder_input
-        # unique_target = train_encoder_target + synthetic_encoder_target
-        # unique_indices = np.argsort(unique_target)[::-1]
-        # unique_input = [unique_input[i] for i in unique_indices]
-        # topk_archs = unique_input[:args.k]
-        # controller_infer_dataset = utils.ControllerDataset(topk_archs, None, False)
-        # controller_infer_queue = torch.utils.data.DataLoader(controller_infer_dataset, batch_size=len(controller_infer_dataset), shuffle=False, pin_memory=True)
+        new_archs = []
+        new_seqs = []
+        predict_step_size = 0
+        unique_input = train_encoder_input + synthetic_encoder_input
+        unique_target = train_encoder_target + synthetic_encoder_target
+        unique_indices = np.argsort(unique_target)[::-1]
+        unique_input = [unique_input[i] for i in unique_indices]
+        topk_archs = unique_input[:args.k]
+        controller_infer_dataset = utils.ControllerDataset(topk_archs, None, False)
+        controller_infer_queue = torch.utils.data.DataLoader(controller_infer_dataset, batch_size=len(controller_infer_dataset), shuffle=False, pin_memory=True)
         
-        # while len(new_archs) < args.new_arch:
-        #     predict_step_size += 1
-        #     logging.info('Generate new architectures with step size {}'.format(predict_step_size))
-        #     new_seq, new_perfs = controller_infer(controller_infer_queue, controller, predict_step_size, direction='+')
-        #     for seq in new_seq:
-        #         matrix, ops = utils.convert_seq_to_arch(seq)
-        #         arch = api.ModelSpec(matrix=matrix, ops=ops)
-        #         if nasbench.is_valid(arch) and seq not in train_encoder_input and seq not in new_seqs:
-        #             new_archs.append(arch)
-        #             new_seqs.append(seq)
-        #         if len(new_seqs) >= args.new_arch:
-        #             break
-        #     logging.info('%d new archs generated now', len(new_archs))
-        #     if predict_step_size > args.max_step_size:
-        #         break
-        #
-        # child_arch_pool = new_archs
-        # child_seq_pool = new_seqs
-        # child_arch_pool_valid_acc = []
-        # logging.info("Generate %d new archs", len(child_arch_pool))
+        while len(new_archs) < args.new_arch:
+            predict_step_size += 1
+            logging.info('Generate new architectures with step size {}'.format(predict_step_size))
+            new_seq, new_perfs = controller_infer(controller_infer_queue, controller, predict_step_size, direction='+')
+            for seq in new_seq:
+                matrix, ops = utils.convert_seq_to_arch(seq)
+                arch = api.ModelSpec(matrix=matrix, ops=ops)
+                if nasbench.is_valid(arch) and seq not in train_encoder_input and seq not in new_seqs:
+                    new_archs.append(arch)
+                    new_seqs.append(seq)
+                if len(new_seqs) >= args.new_arch:
+                    break
+            logging.info('%d new archs generated now', len(new_archs))
+            if predict_step_size > args.max_step_size:
+                break
+
+        child_arch_pool = new_archs
+        child_seq_pool = new_seqs
+        child_arch_pool_valid_acc = []
+        logging.info("Generate %d new archs", len(child_arch_pool))
 
 if __name__ == '__main__':
     main()
