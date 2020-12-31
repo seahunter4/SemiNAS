@@ -45,7 +45,7 @@ if __name__ == "__main__":
     draw_scatter(grads,
                  rel_diffs_lab,
                  None,
-                 None,
+                 (0,200),
                  'grads',
                  'relative_diffs2label',
                  fig_path+"grads_rel_diffs2lab.png")

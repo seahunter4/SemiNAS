@@ -24,7 +24,7 @@ parser.add_argument('--data', type=str, default='data')
 parser.add_argument('--output_dir', type=str, default='models')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--n', type=int, default=1100)
-parser.add_argument('--m', type=int, default=100000)
+parser.add_argument('--m', type=int, default=10000)
 parser.add_argument('--nodes', type=int, default=7)
 parser.add_argument('--new_arch', type=int, default=300)
 parser.add_argument('--k', type=int, default=100)
@@ -48,7 +48,7 @@ parser.add_argument('--batch_size', type=int, default=100)
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--optimizer', type=str, default='adam')
 parser.add_argument('--grad_bound', type=float, default=5.0)
-parser.add_argument('--iteration', type=float, default=0)
+parser.add_argument('--iteration', type=float, default=3)
 args = parser.parse_args()
 
 log_format = '%(asctime)s %(message)s'
@@ -232,23 +232,24 @@ def main():
         with open(os.path.join(args.output_dir, 'arch_pool.{}'.format(i)), 'w') as fa:
             for arch, seq, valid_acc in zip(arch_pool, seq_pool, arch_pool_valid_acc):
                 fa.write('{}\t{}\t{}\t{}\n'.format(arch.matrix, arch.ops, seq, valid_acc))
-        # print('Top 10 architectures:')
-        # for arch_index in range(10):
-        #     print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-        #     print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-        #     print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-        #
-        # if i == args.iteration:
-        #     print('Final top 10 architectures:')
-        #     for arch_index in range(10):
-        #         print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-        #         print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-        #         print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-        #         fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
-        #         test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
-        #         print('Mean test accuracy:{}'.format(test_acc))
-        #     break
+        print('Top 10 architectures:')
+        for arch_index in range(10):
+            print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+            print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+            print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
 
+        if i == args.iteration:
+            print('Final top 10 architectures:')
+            for arch_index in range(10):
+                print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+                print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+                print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+                fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
+                test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
+                print('Mean test accuracy:{}'.format(test_acc))
+            break
+
+        # z-score
         train_encoder_input = seq_pool
         train_encoder_target = [(i - mean_val) / std_val for i in arch_pool_valid_acc]
 
@@ -265,6 +266,7 @@ def main():
                                                    controller,
                                                    train_encoder_input,
                                                    args.m)
+        synthetic_encoder_labels = [(i - mean_val) / std_val for i in synthetic_encoder_labels]
         with open("grads_data.txt", "w") as f:
             for g in grads:
                 f.write("{} ".format(g))
