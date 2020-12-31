@@ -232,22 +232,22 @@ def main():
         with open(os.path.join(args.output_dir, 'arch_pool.{}'.format(i)), 'w') as fa:
             for arch, seq, valid_acc in zip(arch_pool, seq_pool, arch_pool_valid_acc):
                 fa.write('{}\t{}\t{}\t{}\n'.format(arch.matrix, arch.ops, seq, valid_acc))
-        print('Top 10 architectures:')
-        for arch_index in range(10):
-            print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-            print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-            print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-
-        if i == args.iteration:
-            print('Final top 10 architectures:')
-            for arch_index in range(10):
-                print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-                print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-                print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
-                fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
-                test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
-                print('Mean test accuracy:{}'.format(test_acc))
-            break
+        # print('Top 10 architectures:')
+        # for arch_index in range(10):
+        #     print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+        #     print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+        #     print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+        #
+        # if i == args.iteration:
+        #     print('Final top 10 architectures:')
+        #     for arch_index in range(10):
+        #         print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+        #         print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+        #         print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+        #         fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
+        #         test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
+        #         print('Mean test accuracy:{}'.format(test_acc))
+        #     break
 
         # z-score
         train_encoder_input = seq_pool
