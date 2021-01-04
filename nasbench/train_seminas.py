@@ -170,12 +170,13 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
     assert len(synthetic_input) == len(synthetic_target)
 
     synthetic_indices = np.argsort(grads)[::-1]
-    synthetic_input = [synthetic_input[synthetic_indices[i]] for i in range(10000)]
-    synthetic_target = [synthetic_target[synthetic_indices[i]] for i in range(10000)]
+    grads = [grads[i] for i in synthetic_indices][:10000]
+    synthetic_input = [synthetic_input[i] for i in synthetic_indices][:10000]
+    synthetic_target = [synthetic_target[i] for i in synthetic_indices][:10000]
+    synthetic_label = [synthetic_label[i] for i in synthetic_indices][:10000]
 
-
+    print("grads = {}".format(grads))
     return synthetic_input, synthetic_target, synthetic_label, grads
-
 
 def main():
     if not torch.cuda.is_available():
