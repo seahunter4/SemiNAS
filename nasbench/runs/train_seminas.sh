@@ -5,6 +5,9 @@ OUTPUT_DIR=outputs/$MODEL
 
 mkdir -p $OUTPUT_DIR
 
-python train_seminas.py \
-  --output_dir=$OUTPUT_DIR \
-  | tee $OUTPUT_DIR/log1229_1.txt
+for i in {1...10}
+do
+  python train_seminas.py \
+    --output_dir=$OUTPUT_DIR \
+    | tee $OUTPUT_DIR/log0105_"$i".txt
+done

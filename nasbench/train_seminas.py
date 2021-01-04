@@ -24,7 +24,7 @@ parser.add_argument('--data', type=str, default='data')
 parser.add_argument('--output_dir', type=str, default='models')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--n', type=int, default=1100)
-parser.add_argument('--m', type=int, default=100000)
+parser.add_argument('--m', type=int, default=10000)
 parser.add_argument('--nodes', type=int, default=7)
 parser.add_argument('--new_arch', type=int, default=300)
 parser.add_argument('--k', type=int, default=100)
@@ -49,6 +49,7 @@ parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--optimizer', type=str, default='adam')
 parser.add_argument('--grad_bound', type=float, default=5.0)
 parser.add_argument('--iteration', type=float, default=3)
+parser.add_argument('--select_narchs', type=int, default=2000)
 args = parser.parse_args()
 
 log_format = '%(asctime)s %(message)s'
@@ -107,7 +108,7 @@ def train_controller(model, train_input, train_target, epochs):
         logging.info("epoch %04d train loss %.6f mse %.6f ce %.6f", epoch, loss, mse, ce)
 
 
-def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_arch=0):
+def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_arch=0, archs_selected=0):
     random_synthetic_input = []
     random_synthetic_target = []
     random_synthetic_label = []
@@ -170,10 +171,10 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
     assert len(synthetic_input) == len(synthetic_target)
 
     synthetic_indices = np.argsort(grads)[::-1]
-    grads = [grads[i] for i in synthetic_indices][:10000]
-    synthetic_input = [synthetic_input[i] for i in synthetic_indices][:10000]
-    synthetic_target = [synthetic_target[i] for i in synthetic_indices][:10000]
-    synthetic_label = [synthetic_label[i] for i in synthetic_indices][:10000]
+    grads = [grads[i] for i in synthetic_indices][:archs_selected]
+    synthetic_input = [synthetic_input[i] for i in synthetic_indices][:archs_selected]
+    synthetic_target = [synthetic_target[i] for i in synthetic_indices][:archs_selected]
+    synthetic_label = [synthetic_label[i] for i in synthetic_indices][:archs_selected]
 
     print("grads = {}".format(grads))
     return synthetic_input, synthetic_target, synthetic_label, grads
@@ -218,6 +219,7 @@ def main():
     arch_pool_valid_acc = []
     mean_val = 0.908192301
     std_val = 0.023961
+    archs_selected = args.select_narchs
     for i in range(args.iteration+1):
         logging.info('Iteration {}'.format(i+1))
         if not child_arch_pool_valid_acc:
@@ -251,6 +253,15 @@ def main():
                 fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
                 test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
                 print('Mean test accuracy:{}'.format(test_acc))
+            with open("final_result.txt", "a") as  f:
+                for arch_index in range(10):
+                    print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
+                    print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
+                    print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+                    fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
+                    test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
+                    print('Mean test accuracy:{}'.format(test_acc))
+                    print("###")
             break
 
         # z-score
@@ -263,13 +274,15 @@ def main():
         logging.info('Finish pre-training EPD')
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
+        archs_selected *= 2
         synthetic_encoder_input, \
         synthetic_encoder_target, \
         synthetic_encoder_labels, \
         grads = generate_synthetic_controller_data(nasbench,
                                                    controller,
                                                    train_encoder_input,
-                                                   args.m)
+                                                   args.m,
+                                                   archs_selected)
         # print("original_labels = {}".format(synthetic_encoder_labels))
         # synthetic_encoder_labels = [(i - mean_val) / std_val for i in synthetic_encoder_labels]
         # print("centralized_labels = {}".format(synthetic_encoder_labels))
