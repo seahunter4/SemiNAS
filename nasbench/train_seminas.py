@@ -253,7 +253,7 @@ def main():
                 fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
                 test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
                 print('Mean test accuracy:{}'.format(test_acc))
-            with open("final_result.txt", "a") as  f:
+            with open("final_result2.txt", "a") as  f:
                 for arch_index in range(10):
                     print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
                     print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
@@ -261,7 +261,7 @@ def main():
                     fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
                     test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
                     print('Mean test accuracy:{}'.format(test_acc))
-                    print("###")
+                print("###")
             break
 
         # z-score
