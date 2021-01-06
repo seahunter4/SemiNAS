@@ -170,7 +170,7 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
     synthetic_label = random_synthetic_label
     assert len(synthetic_input) == len(synthetic_target)
 
-    synthetic_indices = np.argsort(grads)[::-1]
+    synthetic_indices = np.argsort(grads)  # [::-1]
     grads = [grads[i] for i in synthetic_indices][:archs_selected]
     synthetic_input = [synthetic_input[i] for i in synthetic_indices][:archs_selected]
     synthetic_target = [synthetic_target[i] for i in synthetic_indices][:archs_selected]
@@ -253,15 +253,15 @@ def main():
                 fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
                 test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
                 print('Mean test accuracy:{}'.format(test_acc))
-            with open("final_result3.txt", "a") as  f:
+            with open("reverse_res.txt", "a") as  f:
                 for arch_index in range(10):
-                    print('Architecutre connection:{}'.format(arch_pool[arch_index].matrix))
-                    print('Architecture operations:{}'.format(arch_pool[arch_index].ops))
-                    print('Valid accuracy:{}'.format(arch_pool_valid_acc[arch_index]))
+                    f.write('Architecutre connection:{}\n'.format(arch_pool[arch_index].matrix))
+                    f.write('Architecture operations:{}\n'.format(arch_pool[arch_index].ops))
+                    f.write('Valid accuracy:{}\n'.format(arch_pool_valid_acc[arch_index]))
                     fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
                     test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
-                    print('Mean test accuracy:{}'.format(test_acc))
-                print("###")
+                    f.write('Mean test accuracy:{}\n'.format(test_acc))
+                f.write("###")
             break
 
         # z-score
