@@ -5,7 +5,7 @@ OUTPUT_DIR=outputs/$MODEL
 
 mkdir -p $OUTPUT_DIR
 
-for i in {11..25}
+for i in {36..50}
 do
   python train_seminas.py \
     --output_dir=$OUTPUT_DIR \
