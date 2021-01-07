@@ -156,14 +156,14 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
             # encoder_target = sample['encoder_target'].cuda()
             encoder_outputs, _, _, predict_value, _ = model.encoder(encoder_input)
             gradients = torch.autograd.grad(predict_value, encoder_outputs, torch.ones_like(predict_value))[0]
-            print("gradients={}".format(gradients))
+            # print("gradients={}".format(gradients))
             predict_value = predict_value.data.squeeze()
             # predict_value.backward()
             random_synthetic_target += predict_value.tolist()
             # for g in grads_tensor:
             grads += [torch.norm(g).tolist() for g in gradients]
 
-        print("grads:{} with length {}".format(grads, len(grads)))
+        # print("grads:{} with length {}".format(grads, len(grads)))
         assert len(random_synthetic_input) == len(random_synthetic_target)
 
     synthetic_input = random_synthetic_input
@@ -171,7 +171,7 @@ def generate_synthetic_controller_data(nasbench, model, base_arch=None, random_a
     synthetic_label = random_synthetic_label
     assert len(synthetic_input) == len(synthetic_target)
 
-    synthetic_indices = np.argsort(grads)  # [::-1]
+    synthetic_indices = np.argsort(grads)[::-1]
     grads = [grads[i] for i in synthetic_indices][:archs_selected]
     synthetic_input = [synthetic_input[i] for i in synthetic_indices][:archs_selected]
     synthetic_target = [synthetic_target[i] for i in synthetic_indices][:archs_selected]
@@ -254,15 +254,6 @@ def main():
                 fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
                 test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
                 print('Mean test accuracy:{}'.format(test_acc))
-            with open("reverse_res.txt", "a") as  f:
-                for arch_index in range(10):
-                    f.write('Architecutre connection:{}\n'.format(arch_pool[arch_index].matrix))
-                    f.write('Architecture operations:{}\n'.format(arch_pool[arch_index].ops))
-                    f.write('Valid accuracy:{}\n'.format(arch_pool_valid_acc[arch_index]))
-                    fs, cs = nasbench.get_metrics_from_spec(arch_pool[arch_index])
-                    test_acc = np.mean([cs[108][j]['final_test_accuracy'] for j in range(3)])
-                    f.write('Mean test accuracy:{}\n'.format(test_acc))
-                f.write("###")
             break
 
         # z-score
@@ -340,6 +331,7 @@ def main():
         child_seq_pool = new_seqs
         child_arch_pool_valid_acc = []
         logging.info("Generate %d new archs", len(child_arch_pool))
+
 
 if __name__ == '__main__':
     main()
