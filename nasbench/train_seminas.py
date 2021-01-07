@@ -50,6 +50,7 @@ parser.add_argument('--optimizer', type=str, default='adam')
 parser.add_argument('--grad_bound', type=float, default=5.0)
 parser.add_argument('--iteration', type=float, default=3)
 parser.add_argument('--select_narchs', type=int, default=2000)
+parser.add_argument('--saved_number', type=int, default=0)
 args = parser.parse_args()
 
 log_format = '%(asctime)s %(message)s'
@@ -235,7 +236,7 @@ def main():
         arch_pool = [arch_pool[i] for i in arch_pool_valid_acc_sorted_indices]
         seq_pool = [seq_pool[i] for i in arch_pool_valid_acc_sorted_indices]
         arch_pool_valid_acc = [arch_pool_valid_acc[i] for i in arch_pool_valid_acc_sorted_indices]
-        with open(os.path.join(args.output_dir, 'arch_pool.{}'.format(i)), 'w') as fa:
+        with open(os.path.join(args.output_dir, 'arch_pool.{}-{}'.format(args.saved_number, i)), 'w') as fa:
             for arch, seq, valid_acc in zip(arch_pool, seq_pool, arch_pool_valid_acc):
                 fa.write('{}\t{}\t{}\t{}\n'.format(arch.matrix, arch.ops, seq, valid_acc))
         print('Top 10 architectures:')
