@@ -7,7 +7,7 @@ if __name__ == "__main__":
     search_token = 'Mean test'
     for root, dirnames, filenames in os.walk(path):
         for filename in filenames:
-            if re.match(token, filename):
+            if re.match(filename_token, filename):
                 test_accs = list()
                 with open (filename, 'r') as f:
                     line = f.readline()
