@@ -17,16 +17,18 @@ if __name__ == "__main__":
                             break
                         if re.match(search_token, line):
                             test_acc = float(line.rstrip().split(':')[-1])
+                            if not test_accs:
+                                first_acc = test_acc
                             test_accs.append(test_acc)
                 if len(test_accs) == 20:
                     test_accs = test_accs[:10]
                     max_acc = max(test_accs)
-                    with open("test_acc.txt", "a") as f:
-                        f.write("{} ".format(max_acc))
-                        for acc in test_accs:
-                            f.write("{} ".format(acc))
-                        f.write('\n')
-                    print("Successfully record test acc: {}".format(max_acc))
+                with open("test_acc.txt", "a") as f:
+                    f.write("{} {}\n".format(max_acc, first_acc))
+                    # for acc in test_accs:
+                    #     f.write("{} ".format(acc))
+                    # f.write('\n')
+                print("Successfully record test acc: {}".format(max_acc))
 
 
 
