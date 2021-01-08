@@ -29,7 +29,7 @@ if __name__ == "__main__":
                 max_acc = max(test_accs)
                 max_accs.append(max_acc)
                 first_accs.append(first_acc)
-                with open("ori_test_acc.txt", "w") as f:
+                with open("test_acc.txt", "a") as f:
                     f.write("{} {}\n".format(max_acc, first_acc))
                     # for acc in test_accs:
                     #     f.write("{} ".format(acc))
