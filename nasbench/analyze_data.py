@@ -34,9 +34,9 @@ if __name__ == "__main__":
                     # for acc in test_accs:
                     #     f.write("{} ".format(acc))
                     # f.write('\n')
-                print("Successfully record test acc: {}".format(max_acc))
-    print("Mean best test acc: {}".format(np.mean(max_accs)))
-    print("Mean best val test acc: {}".format(np.mean(first_accs)))
+                print("Successfully record best test acc:{}, first acc:{}".format(max_acc, first_acc))
+    print("Mean best test acc:{}".format(np.mean(max_accs)))
+    print("Mean best val test acc:{}".format(np.mean(first_accs)))
 
 
 
