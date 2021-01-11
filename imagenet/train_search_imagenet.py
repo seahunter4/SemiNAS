@@ -44,6 +44,8 @@ parser.add_argument('--gamma', type=float, default=0.97, help='learning rate dec
 parser.add_argument('--decay_period', type=int, default=1, help='epochs between two learning rate decays')
 parser.add_argument('--num_workers', type=int, default=32)
 parser.add_argument('--log_interval', type=int, default=100)
+parser.add_argument('--select_narchs', type=int, default=2000)
+parser.add_argument('--saved_number', type=int, default=0)
 
 parser.add_argument('--width_stages', type=str, default='24,40,80,96,192,320')
 parser.add_argument('--n_cell_stages', type=str, default='4,4,4,4,4,1')
@@ -289,7 +291,7 @@ def train_controller(model, train_input, train_target, epochs):
         logging.info("epoch %04d train loss %.6f mse %.6f ce %.6f", epoch, loss, mse, ce)
 
 
-def generate_synthetic_controller_data(model, exclude=[], maxn=1000):
+def generate_synthetic_controller_data(model, exclude=[], maxn=1000, archs_selected=200):
     synthetic_input = []
     synthetic_target = []
     while len(synthetic_input) < maxn:
@@ -300,13 +302,23 @@ def generate_synthetic_controller_data(model, exclude=[], maxn=1000):
     synthetic_dataset = utils.ControllerDataset(synthetic_input, None, False)      
     synthetic_queue = torch.utils.data.DataLoader(synthetic_dataset, batch_size=len(synthetic_dataset), shuffle=False, pin_memory=True)
 
-    with torch.no_grad():
-        model.eval()
-        for sample in synthetic_queue:
-            input = utils.move_to_cuda(sample['encoder_input'])
-            _, _, _, predict_value = model.encoder(input)
-            synthetic_target += predict_value.data.squeeze().tolist()
+    # with torch.no_grad():
+    model.eval()
+    grads = list()
+    for sample in synthetic_queue:
+        input = utils.move_to_cuda(sample['encoder_input'])
+        encoder_outputs, _, _, predict_value = model.encoder(input)
+        gradients = torch.autograd.grad(predict_value, encoder_outputs, torch.ones_like(predict_value))[0]
+        synthetic_target += predict_value.data.squeeze().tolist()
+        grads += [torch.norm(g).tolist() for g in gradients]
+
     assert len(synthetic_input) == len(synthetic_target)
+    assert len(synthetic_input) == len(grads)
+
+    synthetic_indices = np.argsort(grads)
+    synthetic_input = [synthetic_input[i] for i in synthetic_indices][:archs_selected]
+    synthetic_target = [synthetic_target[i] for i in synthetic_indices][:archs_selected]
+
     return synthetic_input, synthetic_target
 
 
@@ -373,6 +385,7 @@ def main():
 
     arch_pool = []
     arch_pool_valid_acc = []
+    archs_selected = args.select_narchs
     for controller_iteration in range(args.controller_iterations+1):
         logging.info('Iteration %d', controller_iteration+1)
 
@@ -405,7 +418,7 @@ def main():
                     fp.write('{}\n'.format(perf))
         if controller_iteration == args.controller_iterations:
             break
-                            
+
         # Train Encoder-Predictor-Decoder
         logging.info('Train Encoder-Predictor-Decoder')
         inputs = arch_pool
@@ -419,7 +432,12 @@ def main():
         logging.info('Finish pre-training EPD')
         # Generate synthetic data
         logging.info('Generate synthetic data for EPD')
-        synthetic_inputs, synthetic_targets = generate_synthetic_controller_data(controller, inputs, args.controller_random_arch)
+        archs_selected *= 2
+        synthetic_inputs, \
+        synthetic_targets = generate_synthetic_controller_data(controller,
+                                                               inputs,
+                                                               args.controller_random_arch,
+                                                               archs_selected)
         if args.controller_up_sample_ratio:
             all_inputs = inputs * args.controller_up_sample_ratio + synthetic_inputs
             all_targets = targets * args.controller_up_sample_ratio + synthetic_targets
